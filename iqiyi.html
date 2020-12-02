@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0,user-scalable=no,minimum-scale=1.0,maximum-scale=1.0"/>
+  <meta charset="utf-8">
+  <title>爱奇艺</title>
+  <style type="text/css">
+    *{padding: 0;margin: 0;}
+    table tr td{white-space:nowrap;}
+    table tr td:first-child,table tr th:first-child{text-align: right;}
+    table tr td:last-child,table tr th:last-child{text-align: left;}
+    .show{margin-left:80px;background:none;padding:2px;border:1px solid #ccc;border-radius:5px;outline:none;}
+    table tr td p{height:10px;width:100%;border:1px solid #aaa;border-radius:1px;}
+    table tr td p span{height:10px;border:0;border-radius:1px;background-color:#BCF5A9;display:block;max-width:100%;}
+    .hidden{display:none;}    
+    .icon{position:absolute;max-width:25px;margin-left:-25px;margin-top:-2px;}
+  </style>
+</head>
+<body>
+  <div class="info">
+    <table border="0">
+      <tr>
+        <td>刷新-当前：</td>
+        <td>{{time2str(time, 'onlytime') + ' - ' + time2str(nowtime, 'onlytime')}}</td>
+      </tr>
+      <tr>
+        <th>用户名：</th>
+        <th>
+          {{user.name}}
+          <input class="show" onclick="showScale()" type="button" :value="(hidden_scale ? '显示':'隐藏') + '比例'">
+        </th>
+      </tr>
+      <tr>
+        <td>会员成长值：</td>
+        <td>{{growth.todayGrowthValue + ' / ' + growth.growthvalue + ' / ' + Math.floor((growth.growthvalue-34800)/6000) + '-' + (growth.growthvalue-34800)%6000}}</td>
+      </tr>
+      <tr v-if="growth.growthvalue" :title="insurance_use_scale(growth.growthvalue-34800, 6000,'mini') + '%'" :class="hiddenScale(hidden_scale)">
+        <td>{{insurance_use_scale(growth.growthvalue-34800, 6000,'mini') + '%'}}　</td>
+        <td>
+          <p><span :style="'width:' + insurance_use_scale((growth.growthvalue-34800)%6000, 6000,'mini') + '%'"></span></p>
+        </td>
+      </tr>
+      <template v-for='value,key,index in all_info'>
+        <tr v-if="value" :title="key">
+          <td>{{formatVipName(key)}}会员：</td>
+          <td>{{full_time2str(value)}}</td>
+        </tr>
+        <tr v-if="value" :title="use_scale(value) + '%'" :class="hiddenScale(hidden_scale)">
+          <td><img v-if="value.superscript" class="icon" :src="value.superscript" />{{use_scale(value) + '%'}}　</td>
+          <td><p><span :style="'width:' + use_scale(value) + '%'"></span></p></td>
+        </tr>
+      </template>
+
+     <!--  <tr>
+        <td>会员剩余时间：</td>
+        <td>{{str2time(user.deadline)}}</td>
+      </tr> -->
+      <tr>
+        <th>观影卡：</th>
+        <th>{{insurance.promotionName}}</th>
+      </tr>
+      <tr>
+        <td>观影卡：</td>
+        <td>{{time2str(insurance.startTime) + ' - ' + time2str(insurance.endTime)}}</td>
+      </tr>
+      <tr :title="insurance_use_scale(insurance.startTime, insurance.endTime) + '%'" :class="hiddenScale(hidden_scale)">
+        <td>{{insurance_use_scale(insurance.startTime, insurance.endTime) + '%'}}　</td>
+        <td v-if="insurance.compensateConditionList">
+          <p><span :style="'width:' + insurance_use_scale(insurance.startTime, insurance.endTime) + '%'"></span></p>
+        </td>
+      </tr>
+      <tr>
+        <td>观影卡天数：</td>
+        <td v-if="insurance.compensateConditionList">{{insuranceDay(insurance.startTime, insurance.endTime, insurance.compensateConditionList[1].rewardWatchTimeConditionStart)}}</td>
+      </tr>
+      <tr :title="insurance_use_scale(insurance.startTime, insurance.endTime) + '%'" :class="hiddenScale(hidden_scale)">
+        <td>{{insurance_use_scale(insurance.startTime, insurance.endTime) + '%'}}　</td>
+        <td v-if="insurance.compensateConditionList">
+          <p><span :style="'width:' + insurance_use_scale(insurance.startTime, insurance.endTime) + '%'"></span></p>
+        </td>
+      </tr>
+      <tr>
+        <td>观影卡时长：</td>
+        <td v-if="insurance.compensateConditionList">{{seeTime(insurance.totalWatchTime) + ' / ' + seeTime(insurance.compensateConditionList[1].rewardWatchTimeConditionStart - insurance.totalWatchTime)}}</td>
+      </tr>
+      <tr v-if="insurance.compensateConditionList" :title="insurance_use_scale(insurance.totalWatchTime, insurance.compensateConditionList[1].rewardWatchTimeConditionStart,'mini') + '%'" :class="hiddenScale(hidden_scale)">
+        <td>{{insurance_use_scale(insurance.totalWatchTime, insurance.compensateConditionList[1].rewardWatchTimeConditionStart,'mini') + '%'}}　</td>
+        <td>
+          <p><span :style="'width:' + insurance_use_scale(insurance.totalWatchTime, insurance.compensateConditionList[1].rewardWatchTimeConditionStart,'mini') + '%'"></span></p>
+        </td>
+      </tr>
+      <tr>
+        <td>今日观影：</td>
+        <td v-if="insurance.compensateConditionList">{{seeTime(viewtime)}}</td>
+      </tr>
+      <tr>
+        <td>平均观影：</td>
+        <td v-if="insurance.compensateConditionList">{{avgSeeTime(insurance.startTime, insurance.endTime, insurance.compensateConditionList[1].rewardWatchTimeConditionStart, insurance.totalWatchTime)}}</td>
+      </tr>
+    </table>  
+  </div>
+</body>
+</html>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
+<script type="text/javascript">
+  // 会员分类 中英文id对照表
+  var vip_types = {
+    "vip_info"            : {"name":"黄金", "id":[1,3,/*4,*/16]},
+    "diamond_vip_info"    : {"name":"星钻", "id":[/*4,*/]},
+    "tv_vip_info"         : {"name":"TV", "id":[5]},
+    "tw_vip_info"         : {"name":"台湾地区", "id":[6]},
+    "tennis_vip"          : {"name":"网球", "id":[7]},
+    "tv_tennis_vip"       : {"name":"TV网球", "id":[8]},
+    "tv_children_vip"     : {"name":"TV儿童", "id":[10]},
+    "fun_vip"             : {"name":"FUN", "id":[13]},
+    "sport_vip"           : {"name":"体育", "id":[14]},
+    "tv_sport_vip"        : {"name":"TV体育", "id":[17]},
+    "children_vip"        : {"name":"儿童", "id":[]},
+    "ad_sport_vip"        : {"name":"体育频道", "id":[18]},
+    "intl_vinfo"          : {"name":"国际", "id":[19,20]},
+    "us_vinfo"            : {"name":"美国", "id":[21,22]},
+    "ca_vinfo"            : {"name":"加拿大", "id":[23,24]},
+    "th_vinfo"            : {"name":"泰国", "id":[25,26]},
+    "ph_vinfo"            : {"name":"菲律宾", "id":[27,28]},
+    "my_vinfo"            : {"name":"马来西亚", "id":[29,30]},
+    "la_vinfo"            : {"name":"老挝", "id":[31,32]},
+    "id_vinfo"            : {"name":"印度尼西亚", "id":[33,34]},
+    "kh_vinfo"            : {"name":"柬埔寨", "id":[35,36]},
+    "bn_vinfo"            : {"name":"文莱", "id":[37,38]},
+    "vn_vinfo"            : {"name":"越南", "id":[39,40]},
+    "sg_vinfo"            : {"name":"新加坡", "id":[41,42]},
+    "mm_vinfo"            : {"name":"缅甸", "id":[43,44]},
+    "tv_ad_sport_vip"     : {"name":"TV体育频道", "id":[45]},
+    "zh_hk_vinfo"         : {"name":"中国香港", "id":[46,47]},
+    "zh_mo_vinfo"         : {"name":"中国澳门", "id":[48,49]},
+    "vip_vr_vinfo"        : {"name":"VR", "id":[50]},
+    "business_vinfo"      : {"name":"商业", "id":[51]},
+    "business_tv_vinfo"   : {"name":"TV商业", "id":[52]},
+    "tv_diamond_vip_info" : {"name":"TV星钻", "id":[54]},
+    "vip_qiyu_vinfo"      : {"name":"VR奇遇", "id":[55]}
+  }
+  // P00001
+  var P00001 = getQueryVariable("q");
+  P00001 = P00001 ? P00001 : "";
+  // 爱奇艺账户基础信息 url
+  var info_url = "https://tc.vip.iqiyi.com/growthAgency/watch-film-duration";
+  // info_url = "./iqiyi/1.json";
+  var info_data = {"P00001":P00001};
+  // 观影保 url
+  var insurance_url = "https://serv.vip.iqiyi.com/insurance-api/insuranceInfo/query";
+  // insurance_url = "./iqiyi/2.json";
+  // 观影保 参数
+  var insurance_data = {"P00001":P00001};
+  // 所有会员种类 url
+  var allinfo_url = "https://vinfo.vip.iqiyi.com/external/vip_users";
+  // allinfo_url = "./iqiyi/3.json";
+  // 所有会员种类 url
+  var allinfo_data = {
+    "P00001":     P00001,
+    "bizSource":  "h5_web",
+    "version":    "3.0",
+    "vipTypes":   getVipTypes()
+  };
+  var diamond_data = {
+    "P00001":     P00001,
+    "bizSource":  "h5_web",
+    "version":    "3.0",
+    "vipTypes":   4
+  };
+  // 会员种类id 以,拼接
+  function getVipTypes(){
+    var vipTypes = {};
+    $.each(vip_types,function(index,value){
+      Array.prototype.push.apply(vipTypes,value.id);
+    })
+    return Array.from(vipTypes).toString();
+  }
+  var info = new Vue({
+    el: 'div.info',
+    data: {
+      time: (new Date()).getTime(),
+      nowtime: (new Date()).getTime(),
+      user:     [],
+      growth:   [],
+      viewtime: 0,
+      insurance:[],
+      all_info: [],
+      icon: "",
+      hidden_scale: false
+    },
+    computed: {
+      hiddenScale(hide = true){
+        return function (hide) {
+          return hide ? "hidden" : "";
+        }
+      },
+      // 观看时间
+      seeTime(t) {
+        return function (t) {
+          return t ? secondToDate(t) : '';
+        }
+      },
+      // 平均观看时间
+      avgSeeTime(start, end, total, t){
+        return function (start, end, total, t) {
+          return start && t ? myInsuranceDay(start, end, total, t) : '';
+        }      
+      },
+      // 字符串转时间
+      str2time(t) {
+        return function (t) {
+          return t ? dateToSecond(t) : '';
+        }
+      },
+      // 全部信息 时间转字符串
+      full_time2str(data, tyep=''){
+        return function (data, type) {
+          var end = data && type == 'mini' ? data.deadline.t : data.longestDeadline.t;
+          return data ? timestampToTime(data.createTime.t) + " - " + timestampToTime(end) : "";
+        }
+      },
+      use_scale(data, type=''){
+        return function (data, type) {
+          var t = (new Date()).getTime();
+          var end = data && type == 'mini' ? data.deadline.t : data.longestDeadline.t;
+          var res = Math.round(data ? ((t - data.createTime.t) / (end - data.createTime.t))*100000 : 0);
+          return res ? res/1000 : res;
+        }
+      },
+      insurance_use_scale(start, end, type=''){
+        return function (start, end, type) {
+          var t = (new Date()).getTime();
+          var res = 0;
+          if(type == "mini"){
+            res = Math.round(start && end ? (start / end)*100000 : 0);
+          }else{
+            res = Math.round(start && end ? ((t - start) / (end - start))*100000 : 0);
+          }
+          return res ? res/1000 : res;
+        }
+      },
+      // 时间转字符串
+      time2str(t, type='') {
+        return function (t, type) {
+          return t ? timestampToTime(t,type) : '';
+        }
+      },
+      // 观影卡天数
+      insuranceDay(start, end, total){
+        return function (start, end, total) {
+          return start && end ? myInsuranceDay(start, end, total) : '';
+        }        
+      },
+      // 会员等级ICON
+      showIcon(l){
+        return function (l) {
+          // return l ? "./iqiyi/" + l + ".png" : '';
+          return  info && info.icon ? info.icon : "";
+        }        
+      },
+      // 会员种类 英文转中文
+      formatVipName(name){
+        return function (name) {
+          return name ? vip_types[name]["name"] : '';
+        }        
+      }
+    }
+  })
+  function showScale(){
+    info.hidden_scale = !info.hidden_scale;
+  }
+  loadToday();
+  // 账户基础信息
+  function loadToday(){
+    $.ajax({
+      url: info_url,
+      type: 'GET',
+      data: info_data,
+      dataType: "jsonp",
+      jsonpCallback: "returnInfo",
+      headers: {},
+      success: function (data) {
+        info.user     = data.data.data.user
+        info.growth   = data.data.data.growth
+        info.viewtime = data.data.data.viewtime.time
+      }
+    })
+    // $.ajax({
+    //   type: "GET",
+    //   url: info_url,
+    //   data: {},
+    //   dataType: "json",
+    //   success: function (data) {
+    //     info.user     = data.data.user
+    //     info.growth   = data.data.growth
+    //     info.viewtime = data.data.viewtime.time
+    //   }
+    // });
+  }  
+
+  $.ajax({
+    type: "GET",
+    url: insurance_url,
+    data: insurance_data,
+    dataType: "json",
+    success: function (data) {
+      if(data.dataList)
+        info.insurance = data.dataList[0];
+    }
+  });
+  // 除星钻外
+  $.ajax({
+    type: "GET",
+    url: allinfo_url,
+    data: allinfo_data,
+    dataType: "json",
+    success: function (data) {
+      info.all_info = data.data
+      loadDiamond();
+    }
+  });
+  // 仅星钻
+  function loadDiamond(){
+    $.ajax({
+      type: "GET",
+      url: allinfo_url,
+      data: diamond_data,
+      dataType: "json",
+      success: function (data) {
+        if(data && data.data && data.data.vip_info)
+          info.all_info.diamond_vip_info = data.data.vip_info
+      }
+    });    
+  }
+  
+  /**
+   * 秒数转时间
+   * @param  Number  t        
+   * @param  Boolean have_day 是否转天数
+   * @return String           
+   */
+  function secondToDate(t,have_day = false) {
+    t = t > 0 ? t : 0;
+    var h = Math.floor(t / 3600) < 10 ? '0'+Math.floor(t / 3600) : Math.floor(t / 3600);
+    day = 0;
+    if(have_day){
+      day = Math.floor(h/24);
+      h = h%24;
+    }
+    if(day)
+      h = day + "天 " + h;
+    var m = Math.floor((t / 60 % 60)) < 10 ? '0' + Math.floor((t / 60 % 60)) : Math.floor((t / 60 % 60));
+    var s = Math.floor((t % 60)) < 10 ? '0' + Math.floor((t % 60)) : Math.floor((t % 60));
+    return t = h + ":" + m + ":" + s;
+  }
+  /**
+   * 时间转秒
+   * @param  String t 
+   * @return Number   
+   */
+  function dateToSecond(t) {
+    var deadline = Date.parse(t.replace(/\-/g, "/"));
+    var time = Math.round((deadline - (new Date()).getTime())/1000);
+    return secondToDate(time, true);
+  }
+  /**
+   * 时间戳转时间
+   * @param  Number t   时间戳
+   * @param  String type 
+   * @return String     时间
+   */
+  function timestampToTime(t, type='source') {
+    var date = new Date(t);
+    var Y = date.getFullYear() + '-';
+    var M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+    var D = (date.getDate() < 10 ? '0'+date.getDate() : date.getDate()) + ' ';
+    switch (type) {
+      case "start":
+        var h = '';
+        var m = '';
+        var s = ''; 
+        break;
+      case "end":
+        var h = '23:';
+        var m = '59:';
+        var s = '59'; 
+        break;
+      default:
+        var h = (date.getHours() < 10 ? '0'+date.getHours() : date.getHours()) + ':';
+        var m = (date.getMinutes() < 10 ? '0'+date.getMinutes() : date.getMinutes()) + ':';
+        var s = (date.getSeconds() < 10 ? '0'+date.getSeconds() : date.getSeconds());        
+        break;
+    }      
+    strDate = IsPC() ? Y+M+D+h+m+s : (type == 'onlytime' ? h+m+s : Y+M+D);
+    return strDate;    
+  }
+  /**
+   * 观影卡 已用 总时间
+   */
+  function myInsuranceDay(start, end, total_w, t=0){
+    var total = ((end - start) / 1000) / (24 * 60 *60);
+    start = Date.parse((timestampToTime(start, "start")).replace(/-/g,'/'));
+    var use = Math.ceil((((new Date()).getTime() - start) / 1000) / (24 * 60 *60));
+    var surplus = total - use;
+    surplus = surplus > 0 ? surplus : 0;
+    if(t){
+      return secondToDate(t/use) + " / " + secondToDate((total_w-t)/surplus);
+    }
+    return use + " / " + surplus;
+  }  
+  /**
+   * 平均每头观影时长
+   * @param  Number start   时间戳
+   * @param  Number t       时间戳
+   */
+  function myAvgSeeTime(start, t){
+    start = Date.parse((timestampToTime(start, "start")).replace(/-/g,'/'));
+    var use = Math.ceil((((new Date()).getTime() - start) / 1000) / (24 * 60 *60));
+    var avg = secondToDate(t/use);
+    return avg
+  }
+  /**
+   * 获取url参数
+   */
+  function getQueryVariable(variable){
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i=0;i<vars.length;i++) {
+      var pair = vars[i].split("=");
+      if(pair[0] == variable){
+        return pair[1];
+      }
+    }
+    return(false);
+  }
+  setInterval("nowtime()","1000");
+  /**
+   * 当前时间
+   */
+  function nowtime(){
+    info.nowtime = (new Date()).getTime();
+  }
+
+  if(!IsPC()){
+
+  }
+
+  function IsPC() {
+    var userAgentInfo = navigator.userAgent;
+    var Agents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod"];
+    var flag = true;
+    for (var v = 0; v < Agents.length; v++) {
+      if (userAgentInfo.indexOf(Agents[v]) > 0) {
+        flag = false;
+        break;
+      }
+    }
+    return flag;
+  }
+</script>
